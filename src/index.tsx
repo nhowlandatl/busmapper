@@ -21,10 +21,32 @@ import * as ReactDom from "react-dom";
 import { Wrapper, Status } from "@googlemaps/react-wrapper";
 import { createCustomEqual } from "fast-equals";
 import { isLatLngLiteral } from "@googlemaps/typescript-guards";
+import busLines from "./busLines2";
+import individualBusses from "./individualBusses";
+import Select from "react-select";
 
 const render = (status: Status) => {
   return <h1>{status}</h1>;
 };
+
+const busLinesArray = busLines;
+const individualBussesArray = individualBusses;
+
+// TODO:
+// 1. Extract the t.Id value from user select on dropdown menu, which is the
+// the line name/number
+
+// 2. Use that value and return all items where individualBusses.MonitoredVehicleJourney.LineRef == t.Id, and append
+// individualBusses.MonitoredVehicleJourney.VehicleLocation.Longitude
+// and individualBusses.MonitoredVehicleJourney.VehicleLocation.Latitude to filteredArray list
+// so that it is a list of name/value object pairs, e.g.,
+// filteredArray[0] {
+// longitude: 100,
+// latitude: -50
+//}
+// 3. Use that array of longitudes/latitudes to show markers on Google maps API
+
+//const busLineSelectMenu = [];
 
 const App: React.VFC = () => {
   const [clicks, setClicks] = React.useState<google.maps.LatLng[]>([]);
@@ -45,6 +67,23 @@ const App: React.VFC = () => {
     setCenter(m.getCenter()!.toJSON());
   };
 
+  // busLinesArray.forEach(function (element) {
+  //   busLineSelectMenu.push({ label: element, value: element });
+  // });
+
+  // return list of busline code name + public name
+  // const busLines = (
+  //   <div>
+  //     {busLinesArray.map((item, i) => {
+  //       return (
+  //         <option key={i} value={item.Name}>
+  //           {item.Name}
+  //         </option>
+  //       );
+  //     })}
+  //   </div>
+  // );
+
   const form = (
     <div
       style={{
@@ -54,6 +93,14 @@ const App: React.VFC = () => {
         overflow: "auto",
       }}
     >
+      {/* Work in progress */}
+      <Select
+        options={busLinesArray.map((t) => ({
+          value: t.Id,
+          label: "Line " + t.Id + " " + `(${t.Name})`,
+        }))}
+        placeholder="Filter bus line"
+      />
       <label htmlFor="zoom">Zoom</label>
       <input
         type="number"
