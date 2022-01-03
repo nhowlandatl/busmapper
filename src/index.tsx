@@ -18,6 +18,7 @@ import "./style.css";
 
 import * as React from "react";
 import * as ReactDom from "react-dom";
+import { useState } from "react";
 import { Wrapper, Status } from "@googlemaps/react-wrapper";
 import { createCustomEqual } from "fast-equals";
 import { isLatLngLiteral } from "@googlemaps/typescript-guards";
@@ -35,7 +36,7 @@ const individualBussesArray = individualBusses;
 // TODO:
 // 1. Extract the t.Id value from user select on dropdown menu, which is the
 // the line name/number
-
+// done!
 // 2. Use that value and return all items where individualBusses.MonitoredVehicleJourney.LineRef == t.Id, and append
 // individualBusses.MonitoredVehicleJourney.VehicleLocation.Longitude
 // and individualBusses.MonitoredVehicleJourney.VehicleLocation.Latitude to filteredArray list
@@ -55,6 +56,15 @@ const App: React.VFC = () => {
     lat: 0,
     lng: 0,
   });
+  const [filterSelection, setFilterSelection] = useState({
+    value: null,
+    label: null,
+  });
+
+  const changeFilter = (selected) => {
+    setFilterSelection(selected);
+    console.log(`Selected: ${selected.label}`);
+  };
 
   const onClick = (e: google.maps.MapMouseEvent) => {
     // avoid directly mutating state
@@ -83,7 +93,6 @@ const App: React.VFC = () => {
   //     })}
   //   </div>
   // );
-
   const form = (
     <div
       style={{
@@ -100,7 +109,11 @@ const App: React.VFC = () => {
           label: "Line " + t.Id + " " + `(${t.Name})`,
         }))}
         placeholder="Filter bus line"
+        onChange={changeFilter}
       />
+      <div>
+        {filterSelection.value != null && <div>{filterSelection.value}</div>}
+      </div>
       <label htmlFor="zoom">Zoom</label>
       <input
         type="number"
