@@ -18,13 +18,14 @@ import "./style.css";
 
 import * as React from "react";
 import * as ReactDom from "react-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Wrapper, Status } from "@googlemaps/react-wrapper";
 import { createCustomEqual } from "fast-equals";
 import { isLatLngLiteral } from "@googlemaps/typescript-guards";
 import busLines from "./busLines2";
 import individualBusses from "./individualBusses";
 import Select from "react-select";
+import { Alert } from "react-bootstrap";
 
 const render = (status: Status) => {
   return <h1>{status}</h1>;
@@ -37,6 +38,7 @@ const individualBussesArray = individualBusses;
 // 1. Extract the t.Id value from user select on dropdown menu, which is the
 // the line name/number
 // done!
+
 // 2. Use that value and return all items where individualBusses.MonitoredVehicleJourney.LineRef == t.Id, and append
 // individualBusses.MonitoredVehicleJourney.VehicleLocation.Longitude
 // and individualBusses.MonitoredVehicleJourney.VehicleLocation.Latitude to filteredArray list
@@ -47,23 +49,70 @@ const individualBussesArray = individualBusses;
 //}
 // 3. Use that array of longitudes/latitudes to show markers on Google maps API
 
-//const busLineSelectMenu = [];
-
 const App: React.VFC = () => {
   const [clicks, setClicks] = React.useState<google.maps.LatLng[]>([]);
-  const [zoom, setZoom] = React.useState(3); // initial zoom
+  const [zoom, setZoom] = React.useState(12); // initial zoom
   const [center, setCenter] = React.useState<google.maps.LatLngLiteral>({
-    lat: 0,
-    lng: 0,
+    lat: 37.7749,
+    lng: -122.4194,
   });
   const [filterSelection, setFilterSelection] = useState({
     value: null,
     label: null,
   });
+  const [noBussesFound, setNoBussesFound] = useState(false);
+  const [filteredBusArray, setfilteredBusArray] = useState([]);
 
   const changeFilter = (selected) => {
     setFilterSelection(selected);
-    console.log(`Selected: ${selected.label}`);
+  };
+
+  // route 650 has no matches (for testing)
+  useEffect(() => {
+    getBusLocationsByLine(); // This is be executed when `filterSelection` state changes
+  }, [filterSelection]);
+
+  const isBusMatchesFound = (busArray) => {
+    const matchingBusArray =
+      busArray.Siri.ServiceDelivery.VehicleMonitoringDelivery.VehicleActivity.filter(
+        (bus) => bus.MonitoredVehicleJourney.LineRef == filterSelection.value
+      );
+    // If there are busses currently on this route, map each busses longtitude/latitude to state
+    if (matchingBusArray.length >= 1) {
+      console.log(matchingBusArray);
+      setfilteredBusArray(
+        matchingBusArray.map((filteredBus) => ({
+          longitude:
+            filteredBus.MonitoredVehicleJourney.VehicleLocation.Longitude,
+          latitude:
+            filteredBus.MonitoredVehicleJourney.VehicleLocation.Latitude,
+        }))
+      );
+      return matchingBusArray;
+    } else return false;
+  };
+
+  // Retrieve bus locations by route from metro API
+  const getBusLocationsByLine = () => {
+    fetch(
+      "http://api.511.org/transit/VehicleMonitoring?api_key=1c38da56-2d7a-4e1e-b99f-b37964deb878&agency=AC"
+    )
+      .then((res) => res.json())
+      .then(
+        (result) => {
+          console.log(filterSelection);
+          if (isBusMatchesFound(result)) {
+            setNoBussesFound(false);
+            console.log("True: matches found");
+          } else {
+            setNoBussesFound(true);
+            console.log("False: no matches found");
+          }
+        },
+        (error) => {
+          console.log("there was an error: " + error);
+        }
+      );
   };
 
   const onClick = (e: google.maps.MapMouseEvent) => {
@@ -111,40 +160,12 @@ const App: React.VFC = () => {
         placeholder="Filter bus line"
         onChange={changeFilter}
       />
+      {/* Use bus route L san pablo transbay to return true */}
       <div>
-        {filterSelection.value != null && <div>{filterSelection.value}</div>}
+        {noBussesFound === true && (
+          <div>No busses found. Try filtering on another route.</div>
+        )}
       </div>
-      <label htmlFor="zoom">Zoom</label>
-      <input
-        type="number"
-        id="zoom"
-        name="zoom"
-        value={zoom}
-        onChange={(event) => setZoom(Number(event.target.value))}
-      />
-      <br />
-      <label htmlFor="lat">Latitude</label>
-      <input
-        type="number"
-        id="lat"
-        name="lat"
-        value={center.lat}
-        onChange={(event) =>
-          setCenter({ ...center, lat: Number(event.target.value) })
-        }
-      />
-      <br />
-      <label htmlFor="lng">Longitude</label>
-      <input
-        type="number"
-        id="lng"
-        name="lng"
-        value={center.lng}
-        onChange={(event) =>
-          setCenter({ ...center, lng: Number(event.target.value) })
-        }
-      />
-      <h3>{clicks.length === 0 ? "Click on map to add markers" : "Clicks"}</h3>
       {clicks.map((latLng, i) => (
         <pre key={i}>{JSON.stringify(latLng.toJSON(), null, 2)}</pre>
       ))}
