@@ -1,3 +1,5 @@
+# The bulk of the project is in /src/index.tsx.
+
 # Google Maps JavaScript API Sample Application
 
 This sample is generated from @googlemaps/js-samples located at
