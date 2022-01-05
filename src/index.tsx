@@ -23,7 +23,6 @@ import { Wrapper, Status } from "@googlemaps/react-wrapper";
 import { createCustomEqual } from "fast-equals";
 import { isLatLngLiteral } from "@googlemaps/typescript-guards";
 import busLines from "./busLines2";
-import individualBusses from "./individualBusses";
 import Select from "react-select";
 import { Alert } from "react-bootstrap";
 
@@ -31,27 +30,14 @@ const render = (status: Status) => {
   return <h1>{status}</h1>;
 };
 
+// Known bus routes are set from JSON file
 const busLinesArray = busLines;
-const individualBussesArray = individualBusses;
-
-// TODO:
-// 1. Extract the t.Id value from user select on dropdown menu, which is the
-// the line name/number
-// done!
-
-// 2. Use that value and return all items where individualBusses.MonitoredVehicleJourney.LineRef == t.Id, and append
-// individualBusses.MonitoredVehicleJourney.VehicleLocation.Longitude
-// and individualBusses.MonitoredVehicleJourney.VehicleLocation.Latitude to filteredArray list
-// so that it is a list of name/value object pairs, e.g.,
-// filteredArray[0] {
-// longitude: 100,
-// latitude: -50
-//}
-// 3. Use that array of longitudes/latitudes to show markers on Google maps API
 
 const App: React.VFC = () => {
+  // State declarations
   const [clicks, setClicks] = React.useState<google.maps.LatLng[]>([]);
   const [zoom, setZoom] = React.useState(12); // initial zoom
+  // default center to San Francisco
   const [center, setCenter] = React.useState<google.maps.LatLngLiteral>({
     lat: 37.7749,
     lng: -122.4194,
@@ -61,7 +47,7 @@ const App: React.VFC = () => {
     label: null,
   });
   const [noBussesFound, setNoBussesFound] = useState(false);
-  const [filteredBusArray, setfilteredBusArray] = useState([]);
+  const [filteredBusArray, setfilteredBusArray] = useState<any>([]);
 
   const changeFilter = (selected) => {
     setFilterSelection(selected);
@@ -72,20 +58,24 @@ const App: React.VFC = () => {
     getBusLocationsByLine(); // This is be executed when `filterSelection` state changes
   }, [filterSelection]);
 
+  // Functions
   const isBusMatchesFound = (busArray) => {
     const matchingBusArray =
       busArray.Siri.ServiceDelivery.VehicleMonitoringDelivery.VehicleActivity.filter(
         (bus) => bus.MonitoredVehicleJourney.LineRef == filterSelection.value
       );
-    // If there are busses currently on this route, map each busses longtitude/latitude to state
+    // If there are busses currently on this route, map each busses latitude/longtitude to state
     if (matchingBusArray.length >= 1) {
       console.log(matchingBusArray);
       setfilteredBusArray(
         matchingBusArray.map((filteredBus) => ({
-          longitude:
-            filteredBus.MonitoredVehicleJourney.VehicleLocation.Longitude,
-          latitude:
-            filteredBus.MonitoredVehicleJourney.VehicleLocation.Latitude,
+          name: filteredBus.MonitoredVehicleJourney.PublishedLineName,
+          latitude: parseInt(
+            filteredBus.MonitoredVehicleJourney.VehicleLocation.Latitude
+          ),
+          longitude: parseInt(
+            filteredBus.MonitoredVehicleJourney.VehicleLocation.Longitude
+          ),
         }))
       );
       return matchingBusArray;
@@ -95,7 +85,7 @@ const App: React.VFC = () => {
   // Retrieve bus locations by route from metro API
   const getBusLocationsByLine = () => {
     fetch(
-      "http://api.511.org/transit/VehicleMonitoring?api_key=1c38da56-2d7a-4e1e-b99f-b37964deb878&agency=AC"
+      "http://api.511.org/transit/VehicleMonitoring?api_key=1c38da56-2d7a-4e1e-b99f-b37964deb878&agency=SF"
     )
       .then((res) => res.json())
       .then(
@@ -126,22 +116,6 @@ const App: React.VFC = () => {
     setCenter(m.getCenter()!.toJSON());
   };
 
-  // busLinesArray.forEach(function (element) {
-  //   busLineSelectMenu.push({ label: element, value: element });
-  // });
-
-  // return list of busline code name + public name
-  // const busLines = (
-  //   <div>
-  //     {busLinesArray.map((item, i) => {
-  //       return (
-  //         <option key={i} value={item.Name}>
-  //           {item.Name}
-  //         </option>
-  //       );
-  //     })}
-  //   </div>
-  // );
   const form = (
     <div
       style={{
@@ -186,6 +160,17 @@ const App: React.VFC = () => {
           {clicks.map((latLng, i) => (
             <Marker key={i} position={latLng} />
           ))}
+          {filteredBusArray.map((marker) => {
+            return (
+              <Marker
+                position={{
+                  lat: marker.latitude,
+                  lng: marker.longitude,
+                }}
+                key={marker.id}
+              ></Marker>
+            );
+          })}
         </Map>
       </Wrapper>
       {/* Basic form for controlling center and zoom of map. */}
