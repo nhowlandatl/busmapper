@@ -1,4 +1,4 @@
-# The bulk of the project is in /src/index.tsx.
+# The bulk of the project is in /src/index.tsx on the dev branch.
 
 # Google Maps JavaScript API Sample Application
 
