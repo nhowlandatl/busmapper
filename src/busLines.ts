@@ -1,4 +1,4 @@
-// "PublicCode" is the bus line for public use
+// "PublicCode" refers to the bus line name
 const busLines = [
     {
         "Id": "15",

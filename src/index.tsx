@@ -22,9 +22,8 @@ import { useState, useEffect } from "react";
 import { Wrapper, Status } from "@googlemaps/react-wrapper";
 import { createCustomEqual } from "fast-equals";
 import { isLatLngLiteral } from "@googlemaps/typescript-guards";
-import busLines from "./busLines2";
+import busLines from "./busLines";
 import Select from "react-select";
-import { Alert } from "react-bootstrap";
 
 const render = (status: Status) => {
   return <h1>{status}</h1>;
@@ -34,9 +33,11 @@ const render = (status: Status) => {
 const busLinesArray = busLines;
 
 const App: React.VFC = () => {
-  // State declarations
+  //
+  // State
+  //
   const [clicks, setClicks] = React.useState<google.maps.LatLng[]>([]);
-  const [zoom, setZoom] = React.useState(12); // initial zoom
+  const [zoom, setZoom] = React.useState(13); // initial zoom
   // default center to San Francisco
   const [center, setCenter] = React.useState<google.maps.LatLngLiteral>({
     lat: 37.7749,
@@ -50,15 +51,20 @@ const App: React.VFC = () => {
   const [filteredBusArray, setfilteredBusArray] = useState<any>([]);
 
   const changeFilter = (selected) => {
+    // Clear state after search
+    if (filteredBusArray.length >= 1) {
+      setfilteredBusArray([]);
+    }
     setFilterSelection(selected);
   };
 
-  // route 650 has no matches (for testing)
   useEffect(() => {
     getBusLocationsByLine(); // This is be executed when `filterSelection` state changes
   }, [filterSelection]);
 
+  //
   // Functions
+  //
   const isBusMatchesFound = (busArray) => {
     const matchingBusArray =
       busArray.Siri.ServiceDelivery.VehicleMonitoringDelivery.VehicleActivity.filter(
@@ -66,14 +72,13 @@ const App: React.VFC = () => {
       );
     // If there are busses currently on this route, map each busses latitude/longtitude to state
     if (matchingBusArray.length >= 1) {
-      console.log(matchingBusArray);
       setfilteredBusArray(
         matchingBusArray.map((filteredBus) => ({
           name: filteredBus.MonitoredVehicleJourney.PublishedLineName,
-          latitude: parseInt(
+          lat: parseFloat(
             filteredBus.MonitoredVehicleJourney.VehicleLocation.Latitude
           ),
-          longitude: parseInt(
+          lng: parseFloat(
             filteredBus.MonitoredVehicleJourney.VehicleLocation.Longitude
           ),
         }))
@@ -82,7 +87,7 @@ const App: React.VFC = () => {
     } else return false;
   };
 
-  // Retrieve bus locations by route from metro API
+  // Retrieve bus locations based on "SF" route from API
   const getBusLocationsByLine = () => {
     fetch(
       "http://api.511.org/transit/VehicleMonitoring?api_key=1c38da56-2d7a-4e1e-b99f-b37964deb878&agency=SF"
@@ -90,7 +95,6 @@ const App: React.VFC = () => {
       .then((res) => res.json())
       .then(
         (result) => {
-          console.log(filterSelection);
           if (isBusMatchesFound(result)) {
             setNoBussesFound(false);
             console.log("True: matches found");
@@ -100,7 +104,7 @@ const App: React.VFC = () => {
           }
         },
         (error) => {
-          console.log("there was an error: " + error);
+          alert("there was an error: " + error);
         }
       );
   };
@@ -125,7 +129,6 @@ const App: React.VFC = () => {
         overflow: "auto",
       }}
     >
-      {/* Work in progress */}
       <Select
         options={busLinesArray.map((t) => ({
           value: t.Id,
@@ -134,10 +137,12 @@ const App: React.VFC = () => {
         placeholder="Filter bus line"
         onChange={changeFilter}
       />
-      {/* Use bus route L san pablo transbay to return true */}
       <div>
         {noBussesFound === true && (
-          <div>No busses found. Try filtering on another route.</div>
+          <div>
+            No busses are currently running on that line. Try filtering on
+            another route.
+          </div>
         )}
       </div>
       {clicks.map((latLng, i) => (
@@ -149,7 +154,10 @@ const App: React.VFC = () => {
 
   return (
     <div style={{ display: "flex", height: "100%" }}>
-      <Wrapper apiKey={"YOUR_API_KEY"} render={render}>
+      <Wrapper
+        apiKey={"AIzaSyC_yP7WB6PE-I0NIVTYLZCN8iDjRhkydtQ"}
+        render={render}
+      >
         <Map
           center={center}
           onClick={onClick}
@@ -164,10 +172,9 @@ const App: React.VFC = () => {
             return (
               <Marker
                 position={{
-                  lat: marker.latitude,
-                  lng: marker.longitude,
+                  lat: marker.lat,
+                  lng: marker.lng,
                 }}
-                key={marker.id}
               ></Marker>
             );
           })}
@@ -272,8 +279,6 @@ const deepCompareEqualsForMaps = createCustomEqual(
     ) {
       return new google.maps.LatLng(a).equals(new google.maps.LatLng(b));
     }
-
-    // TODO extend to other types
 
     // use fast-equals for other objects
     return deepEqual(a, b);
