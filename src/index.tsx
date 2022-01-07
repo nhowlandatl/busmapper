@@ -90,7 +90,7 @@ const App: React.VFC = () => {
   // Retrieve bus locations based on "SF" route from API
   const getBusLocationsByLine = () => {
     fetch(
-      "http://api.511.org/transit/VehicleMonitoring?api_key=1c38da56-2d7a-4e1e-b99f-b37964deb878&agency=SF"
+      "http://api.511.org/transit/VehicleMonitoring?api_key=InsertYourApiKey=SF"
     )
       .then((res) => res.json())
       .then(
@@ -154,10 +154,7 @@ const App: React.VFC = () => {
 
   return (
     <div style={{ display: "flex", height: "100%" }}>
-      <Wrapper
-        apiKey={"AIzaSyC_yP7WB6PE-I0NIVTYLZCN8iDjRhkydtQ"}
-        render={render}
-      >
+      <Wrapper apiKey={"InsertYourApiKey"} render={render}>
         <Map
           center={center}
           onClick={onClick}
